@@ -35,8 +35,13 @@ type resultInfo struct {
 }
 
 type agent struct {
+<<<<<<< HEAD:gate/base/mqtt_agent.go
 	gate.Agent
 	session                          gate.Session
+=======
+	Agent
+	session                          Session
+>>>>>>> mqant/master:gate/mqtt_agent.go
 	conn                             network.Conn
 	r                                *bufio.Reader
 	w                                *bufio.Writer
@@ -52,7 +57,11 @@ func (a *agent) IsClosed() bool {
 	return a.isclose
 }
 
+<<<<<<< HEAD:gate/base/mqtt_agent.go
 func (a *agent) GetSession() gate.Session {
+=======
+func (a *agent) GetSession() Session {
+>>>>>>> mqant/master:gate/mqtt_agent.go
 	return a.session
 }
 
@@ -98,9 +107,12 @@ func (a *agent) Run() (err error) {
 		log.Error("gate create agent fail",err.Error())
 		return
 	}
+<<<<<<< HEAD:gate/base/mqtt_agent.go
 
 
 
+=======
+>>>>>>> mqant/master:gate/mqtt_agent.go
 	a.gate.agentLearner.Connect(a) //发送连接成功的事件
 
 	//回复客户端 CONNECT

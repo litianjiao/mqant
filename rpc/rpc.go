@@ -46,8 +46,12 @@ type RPCListener interface {
 	OnComplete(fn string, callInfo *CallInfo, result *rpcpb.ResultInfo, exec_time int64)
 }
 type RPCServer interface {
+<<<<<<< HEAD
 	NewRabbitmqRPCServer(info *conf.Rabbitmq) (err error)
 	NewRedisRPCServer(info *conf.Redis) (err error)
+=======
+	NewRemoteRPCServer(info *conf.Rabbitmq) (err error)
+>>>>>>> mqant/master
 	SetListener(listener RPCListener)
 	GetExecuting() int64
 	GetLocalServer() LocalServer
@@ -57,8 +61,12 @@ type RPCServer interface {
 }
 
 type RPCClient interface {
+<<<<<<< HEAD
 	NewRabbitmqClient(info *conf.Rabbitmq) (err error)
 	NewRedisClient(info *conf.Redis) (err error)
+=======
+	NewRemoteClient(info *conf.Rabbitmq) (err error)
+>>>>>>> mqant/master
 	NewLocalClient(server RPCServer) (err error)
 	Done() (err error)
 	CallArgs(_func string, ArgsType []string,args [][]byte ) (interface{}, string)

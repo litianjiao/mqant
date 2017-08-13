@@ -78,6 +78,17 @@ func (server *WSServer) Start() {
 		log.Warning("%v", err)
 	}
 
+<<<<<<< HEAD
+=======
+	if server.MaxConnNum <= 0 {
+		server.MaxConnNum = 10000
+		log.Warning("invalid MaxConnNum, reset to %v", server.MaxConnNum)
+	}
+	if server.MaxMsgLen <= 0 {
+		server.MaxMsgLen = 4096
+		log.Warning("invalid MaxMsgLen, reset to %v", server.MaxMsgLen)
+	}
+>>>>>>> mqant/master
 	if server.HTTPTimeout <= 0 {
 		server.HTTPTimeout = 10 * time.Second
 		log.Warning("invalid HTTPTimeout, reset to %v", server.HTTPTimeout)

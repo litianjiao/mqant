@@ -16,7 +16,10 @@ package module
 import (
 	"github.com/liangdas/mqant/conf"
 	"github.com/liangdas/mqant/rpc"
+<<<<<<< HEAD
 	opentracing "github.com/opentracing/opentracing-go"
+=======
+>>>>>>> mqant/master
 )
 type ServerSession interface {
 	GetId()string
@@ -48,6 +51,7 @@ type App interface {
 	GetSettings() conf.Config //获取配置信息
 	RpcInvoke(module RPCModule, moduleType string, _func string, params ...interface{}) (interface{}, string)
 	RpcInvokeNR(module RPCModule, moduleType string, _func string, params ...interface{}) error
+<<<<<<< HEAD
 
 	/**
 	添加一个 自定义参数序列化接口
@@ -60,6 +64,16 @@ type App interface {
 	DefaultTracer(func ()opentracing.Tracer) error
 
 	GetTracer()	opentracing.Tracer
+=======
+
+	/**
+	添加一个 自定义参数序列化接口
+	gate,system 关键词一被占用请使用其他名称
+	 */
+	AddRPCSerialize(name string, Interface RPCSerialize) error
+
+	GetRPCSerialize()(map[string]RPCSerialize)
+>>>>>>> mqant/master
 }
 
 type Module interface {

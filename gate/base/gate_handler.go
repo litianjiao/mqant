@@ -59,32 +59,51 @@ func (h *handler)OnDestroy(){
 /**
  *更新整个Session 通常是其他模块拉取最新数据
  */
+<<<<<<< HEAD:gate/base/gate_handler.go
 func (h *handler) Update(Sessionid string) (result gate.Session, err string) {
+=======
+func (h *handler) Update(Sessionid string) (result Session, err string) {
+>>>>>>> mqant/master:gate/gate_handler.go
 	agent := h.sessions.Get(Sessionid)
 	if agent == nil {
 		err = "No Sesssion found"
 		return
 	}
+<<<<<<< HEAD:gate/base/gate_handler.go
 	result = agent.(gate.Agent).GetSession()
+=======
+	result = agent.(Agent).GetSession()
+>>>>>>> mqant/master:gate/gate_handler.go
 	return
 }
 
 /**
  *Bind the session with the the Userid.
  */
+<<<<<<< HEAD:gate/base/gate_handler.go
 func (h *handler) Bind(Sessionid string, Userid string) (result gate.Session, err string) {
+=======
+func (h *handler) Bind(Sessionid string, Userid string) (result Session, err string) {
+>>>>>>> mqant/master:gate/gate_handler.go
 	agent := h.sessions.Get(Sessionid)
 	if agent == nil {
 		err = "No Sesssion found"
 		return
 	}
+<<<<<<< HEAD:gate/base/gate_handler.go
 	agent.(gate.Agent).GetSession().SetUserid(Userid)
 
 	if h.gate.storage != nil && agent.(gate.Agent).GetSession().GetUserid() != "" {
+=======
+	agent.(Agent).GetSession().SetUserid(Userid)
+
+	if h.gate.storage != nil && agent.(Agent).GetSession().GetUserid() != "" {
+>>>>>>> mqant/master:gate/gate_handler.go
 		//可以持久化
 		settings, err := h.gate.storage.Query(Userid)
 		if err == nil && settings != nil {
 			//有已持久化的数据,可能是上一次连接保存的
+<<<<<<< HEAD:gate/base/gate_handler.go
 			if agent.(gate.Agent).GetSession().GetSettings() == nil {
 				agent.(gate.Agent).GetSession().SetSettings(settings)
 			} else {
@@ -98,12 +117,31 @@ func (h *handler) Bind(Sessionid string, Userid string) (result gate.Session, er
 				}
 				//数据持久化
 				h.gate.storage.Storage(Userid, agent.(gate.Agent).GetSession().GetSettings())
+=======
+			if agent.(Agent).GetSession().GetSettings() == nil {
+				agent.(Agent).GetSession().SetSettings(settings)
+			} else {
+				//合并两个map 并且以 agent.(Agent).GetSession().Settings 已有的优先
+				for k, v := range settings {
+					if _, ok := agent.(Agent).GetSession().GetSettings()[k]; ok {
+						//不用替换
+					} else {
+						agent.(Agent).GetSession().GetSettings()[k] = v
+					}
+				}
+				//数据持久化
+				h.gate.storage.Storage(Userid, agent.(Agent).GetSession().GetSettings())
+>>>>>>> mqant/master:gate/gate_handler.go
 
 			}
 		}
 	}
 
+<<<<<<< HEAD:gate/base/gate_handler.go
 	result = agent.(gate.Agent).GetSession()
+=======
+	result = agent.(Agent).GetSession()
+>>>>>>> mqant/master:gate/gate_handler.go
 	return
 }
 /**
@@ -122,30 +160,50 @@ func (h *handler) IsConnect(Sessionid string, Userid string) ( bool,  string){
 /**
  *UnBind the session with the the Userid.
  */
+<<<<<<< HEAD:gate/base/gate_handler.go
 func (h *handler) UnBind(Sessionid string) (result gate.Session, err string) {
+=======
+func (h *handler) UnBind(Sessionid string) (result Session, err string) {
+>>>>>>> mqant/master:gate/gate_handler.go
 	agent := h.sessions.Get(Sessionid)
 	if agent == nil {
 		err = "No Sesssion found"
 		return
 	}
+<<<<<<< HEAD:gate/base/gate_handler.go
 	agent.(gate.Agent).GetSession().SetUserid("")
 	result = agent.(gate.Agent).GetSession()
+=======
+	agent.(Agent).GetSession().SetUserid("")
+	result = agent.(Agent).GetSession()
+>>>>>>> mqant/master:gate/gate_handler.go
 	return
 }
 
 /**
  *Push the session with the the Userid.
  */
+<<<<<<< HEAD:gate/base/gate_handler.go
 func (h *handler) Push(Sessionid string, Settings map[string]string) (result gate.Session, err string) {
+=======
+func (h *handler) Push(Sessionid string, Settings map[string]string) (result Session, err string) {
+>>>>>>> mqant/master:gate/gate_handler.go
 	agent := h.sessions.Get(Sessionid)
 	if agent == nil {
 		err = "No Sesssion found"
 		return
 	}
+<<<<<<< HEAD:gate/base/gate_handler.go
 	agent.(gate.Agent).GetSession().SetSettings(Settings)
 	result = agent.(gate.Agent).GetSession()
 	if h.gate.storage != nil && agent.(gate.Agent).GetSession().GetUserid() != "" {
 		err := h.gate.storage.Storage(agent.(gate.Agent).GetSession().GetUserid(), agent.(gate.Agent).GetSession().GetSettings())
+=======
+	agent.(Agent).GetSession().SetSettings(Settings)
+	result = agent.(Agent).GetSession()
+	if h.gate.storage != nil && agent.(Agent).GetSession().GetUserid() != "" {
+		err := h.gate.storage.Storage(agent.(Agent).GetSession().GetUserid(), agent.(Agent).GetSession().GetSettings())
+>>>>>>> mqant/master:gate/gate_handler.go
 		if err != nil {
 			log.Error("gate session storage failure")
 		}
@@ -157,17 +215,29 @@ func (h *handler) Push(Sessionid string, Settings map[string]string) (result gat
 /**
  *Set values (one or many) for the session.
  */
+<<<<<<< HEAD:gate/base/gate_handler.go
 func (h *handler) Set(Sessionid string, key string, value string) (result gate.Session, err string) {
+=======
+func (h *handler) Set(Sessionid string, key string, value string) (result Session, err string) {
+>>>>>>> mqant/master:gate/gate_handler.go
 	agent := h.sessions.Get(Sessionid)
 	if agent == nil {
 		err = "No Sesssion found"
 		return
 	}
+<<<<<<< HEAD:gate/base/gate_handler.go
 	agent.(gate.Agent).GetSession().GetSettings()[key] = value
 	result = agent.(gate.Agent).GetSession()
 
 	if h.gate.storage != nil && agent.(gate.Agent).GetSession().GetUserid() != "" {
 		err := h.gate.storage.Storage(agent.(gate.Agent).GetSession().GetUserid(), agent.(gate.Agent).GetSession().GetSettings())
+=======
+	agent.(Agent).GetSession().GetSettings()[key] = value
+	result = agent.(Agent).GetSession()
+
+	if h.gate.storage != nil && agent.(Agent).GetSession().GetUserid() != "" {
+		err := h.gate.storage.Storage(agent.(Agent).GetSession().GetUserid(), agent.(Agent).GetSession().GetSettings())
+>>>>>>> mqant/master:gate/gate_handler.go
 		if err != nil {
 			log.Error("gate session storage failure")
 		}
@@ -185,11 +255,19 @@ func (h *handler) Remove(Sessionid string, key string) (result interface{}, err 
 		err = "No Sesssion found"
 		return
 	}
+<<<<<<< HEAD:gate/base/gate_handler.go
 	delete(agent.(gate.Agent).GetSession().GetSettings(), key)
 	result = agent.(gate.Agent).GetSession()
 
 	if h.gate.storage != nil && agent.(gate.Agent).GetSession().GetUserid() != "" {
 		err := h.gate.storage.Storage(agent.(gate.Agent).GetSession().GetUserid(), agent.(gate.Agent).GetSession().GetSettings())
+=======
+	delete(agent.(Agent).GetSession().GetSettings(), key)
+	result = agent.(Agent).GetSession()
+
+	if h.gate.storage != nil && agent.(Agent).GetSession().GetUserid() != "" {
+		err := h.gate.storage.Storage(agent.(Agent).GetSession().GetUserid(), agent.(Agent).GetSession().GetSettings())
+>>>>>>> mqant/master:gate/gate_handler.go
 		if err != nil {
 			log.Error("gate session storage failure")
 		}

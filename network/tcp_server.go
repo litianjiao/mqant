@@ -46,6 +46,13 @@ func (server *TCPServer) init() {
 		log.Warning("%v", err)
 	}
 
+<<<<<<< HEAD
+=======
+	if server.MaxConnNum <= 0 {
+		server.MaxConnNum = 10000
+		log.Warning("invalid MaxConnNum, reset to %v", server.MaxConnNum)
+	}
+>>>>>>> mqant/master
 	if server.NewAgent == nil {
 		log.Warning("NewAgent must not be nil")
 	}
