@@ -35,7 +35,7 @@ QQ交流群 :463735103
 	go get github.com/golang/net/context
 	go get github.com/opentracing/basictracer-go
 	go get github.com/opentracing/opentracing-go
-	go get github.com/garyburd/redigo/redis
+	go get github.com/go-redis/redis
 =======
 >>>>>>> mqant/master
 
@@ -118,6 +118,8 @@ bug请直接通过issue提交
 
 
 ## 版本日志
+
+### [v1.6.0新特性](https://github.com/liangdas/mqant/wiki/v1.6.0)
 
 <<<<<<< HEAD
 ### [v1.5.0新特性](https://github.com/liangdas/mqant/wiki/v1.5.0)

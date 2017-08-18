@@ -127,7 +127,6 @@ func (c *RPCClient) CallArgs(_func string, ArgsType []string,args [][]byte ) (in
 	}
 	callback := make(chan rpcpb.ResultInfo, 1)
 	var err error
-
 <<<<<<< HEAD
 	//优先使用本地rpc
 	if c.local_client != nil {
@@ -152,15 +151,15 @@ func (c *RPCClient) CallArgs(_func string, ArgsType []string,args [][]byte ) (in
 >>>>>>> mqant/master
 	}
 
-	if err != nil {
-		return nil, err.Error()
-	}
 
 	resultInfo, ok := <-callback
 	if !ok {
 		return nil, "client closed"
 	}
 	result,err:=argsutil.Bytes2Args(c.app,resultInfo.ResultType,resultInfo.Result)
+	if err!=nil{
+		return nil,err.Error()
+	}
 	return result, resultInfo.Error
 }
 
@@ -205,9 +204,6 @@ func (c *RPCClient) CallNRArgs(_func string, ArgsType []string,args [][]byte ) (
 >>>>>>> mqant/master
 	}
 
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
