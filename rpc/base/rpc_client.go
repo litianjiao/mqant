@@ -151,7 +151,6 @@ func (c *RPCClient) CallArgs(_func string, ArgsType []string,args [][]byte ) (in
 >>>>>>> mqant/master
 	}
 
-
 	resultInfo, ok := <-callback
 	if !ok {
 		return nil, "client closed"
@@ -203,7 +202,6 @@ func (c *RPCClient) CallNRArgs(_func string, ArgsType []string,args [][]byte ) (
 		}
 >>>>>>> mqant/master
 	}
-
 	return nil
 }
 

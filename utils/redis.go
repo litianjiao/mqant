@@ -14,7 +14,8 @@
 package utils
 
 import (
-	"github.com/go-redis/redis"
+	"github.com/garyburd/redigo/redis"
+	"time"
 )
 var factory *RedisFactory
 
@@ -30,38 +31,39 @@ type RedisFactory struct{
 	pools *BeeMap
 }
 
-func (this RedisFactory)GetPool(url string) (*redis.Client,error) {
+func (this RedisFactory)GetPool(url string) (*redis.Pool) {
 	if pool,ok:=this.pools.Items()[url];ok{
-		return pool.(*redis.Client),nil
+		return pool.(*redis.Pool)
 	}
-	options, err:=redis.ParseURL(url)
-	if err!=nil{
-		return nil,err
+	pool := &redis.Pool{
+		// 最大的空闲连接数，表示即使没有redis连接时依然可以保持N个空闲的连接，而不被清除，随时处于待命状态
+		MaxIdle:     10,
+		// 最大的激活连接数，表示同时最多有N个连接 ，为0事表示没有限制
+		MaxActive:     0,
+		//最大的空闲连接等待时间，超过此时间后，空闲连接将被关闭
+		IdleTimeout: 240 * time.Second,
+		// 当链接数达到最大后是否阻塞，如果不的话，达到最大后返回错误
+		Wait:true,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.DialURL(url)
+			if err != nil {
+				return nil, err
+			}
+			return c, err
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
 	}
-	client := redis.NewClient(options)
-	//pool := &redis.Pool{
-	//	MaxIdle:     30,
-	//	IdleTimeout: 240 * time.Second,
-	//	Dial: func() (redis.Conn, error) {
-	//		c, err := redis.DialURL(url)
-	//		if err != nil {
-	//			return nil, err
-	//		}
-	//		return c, err
-	//	},
-	//	TestOnBorrow: func(c redis.Conn, t time.Time) error {
-	//		_, err := c.Do("PING")
-	//		return err
-	//	},
-	//}
-	if client!=nil{
-		this.pools.Set(url,client)
+	if pool!=nil{
+		this.pools.Set(url,pool)
 	}
-	return client,nil
+	return pool
 }
 func (this RedisFactory)CloseAllPool(){
 	for _,pool:=range this.pools.Items(){
-		pool.(*redis.Client).Close()
+		pool.(*redis.Pool).Close()
 	}
 	this.pools.DeleteAll()
 }
