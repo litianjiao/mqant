@@ -26,7 +26,10 @@ import (
 
 var (
 	LenStackBuf = 1024
-
+	LogLevel    = "debug"
+	LogPath     = ""
+	LogFlag     = 0
+	RpcExpired  = 5 //远程访问最后期限值 单位秒[默认5秒] 这个值指定了在客户端可以等待服务端多长时间来应答
 	Conf        = Config{}
 )
 
@@ -39,15 +42,9 @@ func LoadConfig(Path string) {
 }
 
 type Config struct {
-	Rpc	Rpc
 	Module map[string][]*ModuleSettings
 	Mqtt   Mqtt
 	Master Master
-}
-
-
-type Rpc struct {
-	RpcExpired  int //远程访问最后期限值 单位秒[默认5秒] 这个值指定了在客户端可以等待服务端多长时间来应答
 }
 
 type Rabbitmq struct {
@@ -58,19 +55,12 @@ type Rabbitmq struct {
 	BindingKey   string //
 	ConsumerTag  string //消费者TAG
 }
-
-type Redis struct {
-	Uri          string //redis://:[password]@[ip]:[port]/[db]
-	Queue        string
-}
-
 type ModuleSettings struct {
 	Id        string
 	Host      string
 	ProcessID string
 	Settings  map[string]interface{}
 	Rabbitmq  *Rabbitmq
-	Redis  	  *Redis
 }
 
 type Mqtt struct {

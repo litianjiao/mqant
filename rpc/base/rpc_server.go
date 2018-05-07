@@ -25,28 +25,15 @@ import (
 	"github.com/liangdas/mqant/rpc/util"
 	"github.com/liangdas/mqant/module"
 	"github.com/liangdas/mqant/rpc"
-<<<<<<< HEAD
-	"github.com/liangdas/mqant/gate"
-	opentracing "github.com/opentracing/opentracing-go"
-=======
->>>>>>> mqant/master
 )
 
 
 
 type RPCServer struct {
-<<<<<<< HEAD
-	module		module.Module
-=======
->>>>>>> mqant/master
 	app 		module.App
 	functions      map[string]mqrpc.FunctionInfo
 	remote_server  *AMQPServer
 	local_server   *LocalServer
-<<<<<<< HEAD
-	redis_server   *RedisServer
-=======
->>>>>>> mqant/master
 	mq_chan        chan mqrpc.CallInfo  //接收到请求信息的队列
 	callback_chan  chan mqrpc.CallInfo  //信息处理完成的队列
 	wg             sync.WaitGroup //任务阻塞
@@ -56,16 +43,9 @@ type RPCServer struct {
 }
 
 
-<<<<<<< HEAD
-func NewRPCServer(app module.App,module module.Module) (mqrpc.RPCServer, error) {
-	rpc_server := new(RPCServer)
-	rpc_server.app=app
-	rpc_server.module=module
-=======
 func NewRPCServer(app module.App) (mqrpc.RPCServer, error) {
 	rpc_server := new(RPCServer)
 	rpc_server.app=app
->>>>>>> mqant/master
 	rpc_server.call_chan_done = make(chan error)
 	rpc_server.functions = make(map[string]mqrpc.FunctionInfo)
 	rpc_server.mq_chan = make(chan mqrpc.CallInfo,50)
@@ -87,11 +67,7 @@ func NewRPCServer(app module.App) (mqrpc.RPCServer, error) {
 /**
 创建一个支持远程RPC的服务
 */
-<<<<<<< HEAD
-func (s *RPCServer) NewRabbitmqRPCServer(info *conf.Rabbitmq) (err error) {
-=======
 func (s *RPCServer) NewRemoteRPCServer(info *conf.Rabbitmq) (err error) {
->>>>>>> mqant/master
 	remote_server, err := NewAMQPServer(info, s.mq_chan)
 	if err != nil {
 		log.Error("AMQPServer Dial: %s", err)
@@ -99,20 +75,6 @@ func (s *RPCServer) NewRemoteRPCServer(info *conf.Rabbitmq) (err error) {
 	s.remote_server = remote_server
 	return
 }
-<<<<<<< HEAD
-/**
-创建一个支持远程Redis RPC的服务
-*/
-func (s *RPCServer) NewRedisRPCServer(info *conf.Redis) (err error) {
-	redis_server, err := NewRedisServer(info, s.mq_chan)
-	if err != nil {
-		log.Error("RedisServer Dial: %s", err)
-	}
-	s.redis_server = redis_server
-	return
-}
-=======
->>>>>>> mqant/master
 func (s *RPCServer) SetListener(listener mqrpc.RPCListener) {
 	s.listener = listener
 }
@@ -218,7 +180,7 @@ func (s *RPCServer) on_call_handle(calls <-chan mqrpc.CallInfo, callbacks chan<-
 					if s.listener != nil {
 						s.listener.OnTimeOut(callInfo.RpcInfo.Fn, callInfo.RpcInfo.Expired)
 					} else {
-						log.Warning("timeout: This is Call",s.module.GetType(), callInfo.RpcInfo.Fn, callInfo.RpcInfo.Expired, time.Now().UnixNano()/1000000)
+						fmt.Println("timeout: This is Call", callInfo.RpcInfo.Fn, callInfo.RpcInfo.Expired, time.Now().UnixNano()/1000000)
 					}
 				} else {
 					s.runFunc(callInfo, callbacks)
@@ -238,10 +200,7 @@ func (s *RPCServer) runFunc(callInfo mqrpc.CallInfo, callbacks chan<- mqrpc.Call
 		resultInfo := rpcpb.NewResultInfo(Cid,Error,argsutil.NULL,nil)
 		callInfo.Result = *resultInfo
 		callbacks <- callInfo
-<<<<<<< HEAD
-=======
 
->>>>>>> mqant/master
 		if s.listener != nil {
 			s.listener.OnError(callInfo.RpcInfo.Fn, &callInfo, fmt.Errorf(Error))
 		}
@@ -262,7 +221,7 @@ func (s *RPCServer) runFunc(callInfo mqrpc.CallInfo, callbacks chan<- mqrpc.Call
 
 	functionInfo, ok := s.functions[callInfo.RpcInfo.Fn]
 	if !ok {
-		_errorCallback(callInfo.RpcInfo.Cid,fmt.Sprintf("Remote function(%s) not found",callInfo.RpcInfo.Fn))
+		_errorCallback(callInfo.RpcInfo.Cid,fmt.Sprintf("Remote function(%s) not found", callInfo.RpcInfo.Fn))
 		return
 	}
 	_func := functionInfo.Function
@@ -281,14 +240,6 @@ func (s *RPCServer) runFunc(callInfo mqrpc.CallInfo, callbacks chan<- mqrpc.Call
 	//}
 
 	//typ := reflect.TypeOf(_func)
-<<<<<<< HEAD
-
-	s.wg.Add(1)
-	s.executing++
-	_runFunc := func() {
-		var span opentracing.Span=nil
-
-=======
 	var in []reflect.Value
 	if len(ArgsType)>0{
 		in = make([]reflect.Value, len(params))
@@ -304,7 +255,6 @@ func (s *RPCServer) runFunc(callInfo mqrpc.CallInfo, callbacks chan<- mqrpc.Call
 	s.wg.Add(1)
 	s.executing++
 	_runFunc := func() {
->>>>>>> mqant/master
 		defer func() {
 			if r := recover(); r != nil {
 				var rn = ""
@@ -318,17 +268,9 @@ func (s *RPCServer) runFunc(callInfo mqrpc.CallInfo, callbacks chan<- mqrpc.Call
 				buf := make([]byte, 1024)
 				l := runtime.Stack(buf, false)
 				errstr := string(buf[:l])
-				log.Error("%s rpc func(%s) error %s\n ----Stack----\n%s",s.module.GetType(),callInfo.RpcInfo.Fn,rn,errstr)
+				log.Error("rpc func(%s) error %s\n ----Stack----\n%s",callInfo.RpcInfo.Fn,rn,errstr)
 				_errorCallback(callInfo.RpcInfo.Cid,rn)
 			}
-<<<<<<< HEAD
-
-			if span!=nil{
-				span.Finish()
-			}
-
-=======
->>>>>>> mqant/master
 			s.wg.Add(-1)
 			s.executing--
 		}()
@@ -336,51 +278,9 @@ func (s *RPCServer) runFunc(callInfo mqrpc.CallInfo, callbacks chan<- mqrpc.Call
 		//t:=RandInt64(2,3)
 		//time.Sleep(time.Second*time.Duration(t))
 		// f 为函数地址
-		var session gate.Session=nil
-<<<<<<< HEAD
-
-		var in []reflect.Value
-		if len(ArgsType)>0{
-			in = make([]reflect.Value, len(params))
-			for k,v:=range ArgsType{
-				v,err:=argsutil.Bytes2Args(s.app,v,params[k])
-				if err!=nil{
-					_errorCallback(callInfo.RpcInfo.Cid,fmt.Sprintf("args[%d] [%s] Types not allowed",k,reflect.TypeOf(params[k])))
-					return
-				}
-				switch v2:=v.(type) {    //多选语句switch
-				case gate.Session:
-					//尝试加载Span
-					span=v2.LoadSpan(fmt.Sprintf("%s/%s",s.module.GetType(),callInfo.RpcInfo.Fn))
-					if span!=nil{
-						span.SetTag("UserId",v2.GetUserid())
-						span.SetTag("Func",callInfo.RpcInfo.Fn)
-					}
-					session=v2
-				}
-				in[k] = reflect.ValueOf(v)
-			}
-		}
-
-		if s.listener != nil {
-			errs:=s.listener.BeforeHandle(callInfo.RpcInfo.Fn,session, &callInfo)
-			if errs!=nil{
-				_errorCallback(callInfo.RpcInfo.Cid,errs.Error())
-				return
-			}
-		}
-
 		out := f.Call(in)
 		var rs []interface{}
 		if len(out) != 2 {
-			if span!=nil{
-				span.LogEventWithPayload("Error","The number of prepare is not adapted.")
-			}
-=======
-		out := f.Call(in)
-		var rs []interface{}
-		if len(out) != 2 {
->>>>>>> mqant/master
 			_errorCallback(callInfo.RpcInfo.Cid,"The number of prepare is not adapted.")
 			return
 		}
@@ -392,12 +292,6 @@ func (s *RPCServer) runFunc(callInfo mqrpc.CallInfo, callbacks chan<- mqrpc.Call
 		}
 		argsType,args,err:=argsutil.ArgsTypeAnd2Bytes(s.app,rs[0])
 		if err!=nil{
-<<<<<<< HEAD
-			if span!=nil{
-				span.LogEventWithPayload("Error",err.Error())
-			}
-=======
->>>>>>> mqant/master
 			_errorCallback(callInfo.RpcInfo.Cid,err.Error())
 			return
 		}
@@ -409,15 +303,6 @@ func (s *RPCServer) runFunc(callInfo mqrpc.CallInfo, callbacks chan<- mqrpc.Call
 		)
 		callInfo.Result = *resultInfo
 		callbacks <- callInfo
-<<<<<<< HEAD
-
-		if span!=nil{
-			span.LogEventWithPayload("Result.Type",argsType)
-			span.LogEventWithPayload("Result",string(args))
-		}
-
-=======
->>>>>>> mqant/master
 		if s.listener != nil {
 			s.listener.OnComplete(callInfo.RpcInfo.Fn, &callInfo, resultInfo, time.Now().UnixNano()-exec_time)
 		}

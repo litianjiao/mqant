@@ -13,10 +13,6 @@
 // limitations under the License.
 package gate
 
-import (
-	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/liangdas/mqant/gate/base/mqtt"
-)
 /**
 net代理服务 处理器
 */
@@ -26,18 +22,9 @@ type GateHandler interface {
 	Set(Sessionid string, key string, value string) (result Session, err string)    //Set values (one or many) for the session.
 	Remove(Sessionid string, key string) (result interface{}, err string)                    //Remove value from the session.
 	Push(Sessionid string, Settings map[string]string) (result Session, err string) //推送信息给Session
-<<<<<<< HEAD
-	Send(Sessionid string, topic string, body []byte) (result interface{}, err string)       //Send message
-	//查询某一个userId是否连接中，这里只是查询这一个网关里面是否有userId客户端连接，如果有多个网关就需要遍历了
-	IsConnect(Sessionid string, Userid string) (result bool, err string)
-	Close(Sessionid string) (result interface{}, err string)                                 //主动关闭连接
-	Update(Sessionid string) (result Session, err string)                                //更新整个Session 通常是其他模块拉取最新数据
-	OnDestroy()	//退出事件,主动关闭所有的连接
-=======
 	Send(Sessionid string, topic string, body []byte) (result interface{}, err string)       //Send message to the session.
 	Close(Sessionid string) (result interface{}, err string)                                 //主动关闭连接
 	Update(Sessionid string) (result Session, err string)                                //更新整个Session 通常是其他模块拉取最新数据
->>>>>>> mqant/master
 }
 
 type Session interface {
@@ -63,34 +50,7 @@ type Session interface {
 	Remove(key string) (err string)
 	Send(topic string, body []byte) (err string)
 	SendNR(topic string, body []byte) (err string)
-<<<<<<< HEAD
-	//查询某一个userId是否连接中，这里只是查询这一个网关里面是否有userId客户端连接，如果有多个网关就需要遍历了
-	IsConnect(Userid string) (result bool, err string)
 	Close() (err string)
-	Clone()Session
-	/**
-	通过Carrier数据构造本次rpc调用的tracing Span,如果没有就创建一个新的
-	 */
-	CreateRootSpan(operationName string)opentracing.Span
-	/**
-	通过Carrier数据构造本次rpc调用的tracing Span,如果没有就返回nil
-	 */
-	LoadSpan(operationName string)opentracing.Span
-	/**
-	获取本次rpc调用的tracing Span
-	 */
-	Span()opentracing.Span
-	/**
-	从Session的 Span继承一个新的Span
-	 */
-	ExtractSpan(operationName string)opentracing.Span
-	/**
-	获取Tracing的Carrier 可能为nil
-	 */
-	TracCarrier()map[string]string
-=======
-	Close() (err string)
->>>>>>> mqant/master
 }
 
 /**
@@ -117,14 +77,6 @@ type StorageHandler interface {
 	*/
 	Heartbeat(Userid string)
 }
-
-type TracingHandler interface {
-	/**
-	是否需要对本次客户端请求进行跟踪
-	 */
-	OnRequestTracing(session Session,msg *mqtt.Publish)bool
-}
-
 type AgentLearner interface {
 	Connect(a Agent)    //当连接建立  并且MQTT协议握手成功
 	DisConnect(a Agent) //当连接关闭	或者客户端主动发送MQTT DisConnect命令

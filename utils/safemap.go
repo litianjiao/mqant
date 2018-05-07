@@ -76,18 +76,6 @@ func (m *BeeMap) Delete(k interface{}) {
 	m.lock.Lock()
 	delete(m.bm, k)
 	m.lock.Unlock()
-<<<<<<< HEAD
-}
-
-func (m *BeeMap) DeleteAll() {
-	m.lock.Lock()
-	for k, _ := range m.bm {
-		delete(m.bm, k)
-	}
-
-	m.lock.Unlock()
-=======
->>>>>>> mqant/master
 }
 
 // Items returns all items in safemap.

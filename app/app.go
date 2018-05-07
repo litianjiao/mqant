@@ -30,10 +30,6 @@ import (
 	"strings"
 	"github.com/liangdas/mqant/rpc/base"
 	"github.com/liangdas/mqant/module/modules"
-<<<<<<< HEAD
-	opentracing "github.com/opentracing/opentracing-go"
-=======
->>>>>>> mqant/master
 )
 
 
@@ -63,10 +59,6 @@ type DefaultApp struct {
 	routes        map[string]func(app module.App, Type string, hash string) module.ServerSession
 	defaultRoutes func(app module.App, Type string, hash string) module.ServerSession
 	rpcserializes	map[string]module.RPCSerialize
-<<<<<<< HEAD
-	getTracer 	func ()opentracing.Tracer
-=======
->>>>>>> mqant/master
 }
 
 func (app *DefaultApp) Run(debug bool, mods ...module.Module) error {
@@ -163,15 +155,8 @@ func (app *DefaultApp) OnInit(settings conf.Config) error {
 			}
 			if moduel.Rabbitmq != nil {
 				//如果远程的rpc存在则创建一个对应的客户端
-				client.NewRabbitmqClient(moduel.Rabbitmq)
+				client.NewRemoteClient(moduel.Rabbitmq)
 			}
-<<<<<<< HEAD
-			if moduel.Redis != nil {
-				//如果远程的rpc存在则创建一个对应的客户端
-				client.NewRedisClient(moduel.Redis)
-			}
-=======
->>>>>>> mqant/master
 			session := basemodule.NewServerSession(moduel.Id,Type,client)
 			app.serverList[moduel.Id] = session
 			log.Info("RPCClient create success type(%s) id(%s)", Type, moduel.Id)
@@ -273,16 +258,3 @@ func (app *DefaultApp) RpcInvokeNRArgs(module module.RPCModule, moduleType strin
 	}
 	return server.CallNRArgs(_func, ArgsType,args)
 }
-<<<<<<< HEAD
-func (app *DefaultApp)DefaultTracer(_func func ()opentracing.Tracer) error{
-	app.getTracer=_func
-	return nil
-}
-func (app *DefaultApp)GetTracer()opentracing.Tracer{
-	if app.getTracer!=nil{
-		return app.getTracer()
-	}
-	return nil
-}
-=======
->>>>>>> mqant/master

@@ -24,10 +24,6 @@ import (
 	"github.com/liangdas/mqant/rpc/util"
 	"github.com/liangdas/mqant/rpc"
 	"github.com/liangdas/mqant/module"
-<<<<<<< HEAD
-	"github.com/liangdas/mqant/gate"
-=======
->>>>>>> mqant/master
 )
 
 type RPCClient struct {
@@ -35,10 +31,6 @@ type RPCClient struct {
 	serverId	string
 	remote_client *AMQPClient
 	local_client  *LocalClient
-<<<<<<< HEAD
-	redis_client  *RedisClient
-=======
->>>>>>> mqant/master
 }
 
 func NewRPCClient(app 	module.App,serverId string) (mqrpc.RPCClient, error) {
@@ -48,11 +40,7 @@ func NewRPCClient(app 	module.App,serverId string) (mqrpc.RPCClient, error) {
 	return rpc_client, nil
 }
 
-<<<<<<< HEAD
-func (c *RPCClient) NewRabbitmqClient(info *conf.Rabbitmq) (err error) {
-=======
 func (c *RPCClient) NewRemoteClient(info *conf.Rabbitmq) (err error) {
->>>>>>> mqant/master
 	//创建本地连接
 	if info != nil && c.remote_client == nil {
 		c.remote_client, err = NewAMQPClient(info)
@@ -74,50 +62,22 @@ func (c *RPCClient) NewLocalClient(server mqrpc.RPCServer) (err error) {
 	return
 }
 
-<<<<<<< HEAD
-func (c *RPCClient) NewRedisClient(info *conf.Redis) (err error) {
-	//创建本地连接
-	if info != nil && c.redis_client == nil {
-		c.redis_client, err = NewRedisClient(info)
-		if err != nil {
-			log.Error("Dial: %s", err)
-		}
-	}
-	return
-}
-
-=======
->>>>>>> mqant/master
 func (c *RPCClient) Done() (err error) {
 	if c.remote_client != nil {
 		err = c.remote_client.Done()
 	}
-<<<<<<< HEAD
-	if c.redis_client != nil {
-		err = c.redis_client.Done()
-	}
-=======
->>>>>>> mqant/master
 	if c.local_client != nil {
 		err = c.local_client.Done()
 	}
 	return
 }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> mqant/master
 func (c *RPCClient) CallArgs(_func string, ArgsType []string,args [][]byte ) (interface{}, string) {
 	var correlation_id = uuid.Rand().Hex()
 	rpcInfo := &rpcpb.RPCInfo{
 		Fn:      *proto.String(_func),
 		Reply:   *proto.Bool(true),
-<<<<<<< HEAD
-		Expired:   *proto.Int64((time.Now().UTC().Add(time.Second * time.Duration(c.app.GetSettings().Rpc.RpcExpired)).UnixNano()) / 1000000),
-=======
 		Expired:   *proto.Int64((time.Now().UTC().Add(time.Second * time.Duration(conf.RpcExpired)).UnixNano()) / 1000000),
->>>>>>> mqant/master
 		Cid:	*proto.String(correlation_id),
 		Args:    args,
 		ArgsType:ArgsType,
@@ -127,17 +87,7 @@ func (c *RPCClient) CallArgs(_func string, ArgsType []string,args [][]byte ) (in
 	}
 	callback := make(chan rpcpb.ResultInfo, 1)
 	var err error
-<<<<<<< HEAD
-	//优先使用本地rpc
-	if c.local_client != nil {
-		err = c.local_client.Call(*callInfo, callback)
-	} else if c.remote_client != nil{
-		err = c.remote_client.Call(*callInfo, callback)
-	}else if c.redis_client!=nil{
-		err = c.redis_client.Call(*callInfo, callback)
-	}else {
-		return nil, fmt.Sprintf("rpc service (%s) connection failed",c.serverId)
-=======
+
 
 	//优先使用本地rpc
 	if c.local_client != nil {
@@ -148,7 +98,10 @@ func (c *RPCClient) CallArgs(_func string, ArgsType []string,args [][]byte ) (in
 		} else {
 			return nil, fmt.Sprintf("rpc service (%s) connection failed",c.serverId)
 		}
->>>>>>> mqant/master
+	}
+
+	if err != nil {
+		return nil, err.Error()
 	}
 
 	resultInfo, ok := <-callback
@@ -156,9 +109,6 @@ func (c *RPCClient) CallArgs(_func string, ArgsType []string,args [][]byte ) (in
 		return nil, "client closed"
 	}
 	result,err:=argsutil.Bytes2Args(c.app,resultInfo.ResultType,resultInfo.Result)
-	if err!=nil{
-		return nil,err.Error()
-	}
 	return result, resultInfo.Error
 }
 
@@ -167,11 +117,7 @@ func (c *RPCClient) CallNRArgs(_func string, ArgsType []string,args [][]byte ) (
 	rpcInfo := &rpcpb.RPCInfo{
 		Fn:      *proto.String(_func),
 		Reply:   *proto.Bool(false),
-<<<<<<< HEAD
-		Expired:   *proto.Int64((time.Now().UTC().Add(time.Second * time.Duration(c.app.GetSettings().Rpc.RpcExpired)).UnixNano()) / 1000000),
-=======
 		Expired:   *proto.Int64((time.Now().UTC().Add(time.Second * time.Duration(conf.RpcExpired)).UnixNano()) / 1000000),
->>>>>>> mqant/master
 		Cid:	*proto.String(correlation_id),
 		Args:    args,
 		ArgsType:ArgsType,
@@ -179,17 +125,6 @@ func (c *RPCClient) CallNRArgs(_func string, ArgsType []string,args [][]byte ) (
 	callInfo := &mqrpc.CallInfo{
 		RpcInfo:      *rpcInfo,
 	}
-<<<<<<< HEAD
-	//优先使用本地rpc
-	if c.local_client != nil {
-		err = c.local_client.CallNR(*callInfo)
-	} else if c.remote_client != nil{
-		err = c.remote_client.CallNR(*callInfo)
-	}else if c.redis_client!=nil{
-		err = c.redis_client.CallNR(*callInfo)
-	}else {
-		return fmt.Errorf("rpc service (%s) connection failed",c.serverId)
-=======
 
 	//优先使用本地rpc
 	if c.local_client != nil {
@@ -200,7 +135,10 @@ func (c *RPCClient) CallNRArgs(_func string, ArgsType []string,args [][]byte ) (
 		} else {
 			return fmt.Errorf("rpc service (%s) connection failed",c.serverId)
 		}
->>>>>>> mqant/master
+	}
+
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -217,15 +155,6 @@ func (c *RPCClient) Call(_func string, params ...interface{}) (interface{}, stri
 		if err != nil{
 			return nil, fmt.Sprintf( "args[%d] error %s",k,err.Error())
 		}
-<<<<<<< HEAD
-
-		switch v2:=param.(type) {    //多选语句switch
-		case gate.Session:
-			//如果参数是这个需要拷贝一份新的再传
-			param=v2.Clone()
-		}
-=======
->>>>>>> mqant/master
 	}
 	return c.CallArgs(_func,ArgsType,args)
 }
@@ -241,15 +170,6 @@ func (c *RPCClient) CallNR(_func string, params ...interface{}) (err error) {
 		if err != nil{
 			return  fmt.Errorf( "args[%d] error %s",k,err.Error())
 		}
-<<<<<<< HEAD
-
-		switch v2:=param.(type) {    //多选语句switch
-		case gate.Session:
-			//如果参数是这个需要拷贝一份新的再传
-			param=v2.Clone()
-		}
-=======
->>>>>>> mqant/master
 	}
 	return c.CallNRArgs(_func,ArgsType,args)
 }

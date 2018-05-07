@@ -21,7 +21,6 @@ import (
 	"time"
 	"github.com/liangdas/mqant/rpc/pb"
 	"github.com/liangdas/mqant/module"
-	"github.com/liangdas/mqant/gate"
 )
 
 type StatisticalMethod struct {
@@ -81,7 +80,7 @@ func (m *BaseModule) OnInit(subclass module.RPCModule, app module.App, settings 
 	m.settings = settings
 	m.statistical = map[string]*StatisticalMethod{}
 	//创建一个远程调用的RPC
-	m.GetServer().OnInit(subclass,app, settings)
+	m.GetServer().OnInit(app, settings)
 	m.GetServer().GetRPCServer().SetListener(m)
 }
 
@@ -132,13 +131,6 @@ func (m *BaseModule) RpcInvokeNRArgs(moduleType string, _func string, ArgsType [
 		return
 	}
 	return server.CallNRArgs(_func, ArgsType,args)
-}
-
-func (m *BaseModule) BeforeHandle(fn string,session gate.Session, callInfo *mqrpc.CallInfo)error{
-	if m.listener != nil {
-		return m.listener.BeforeHandle(fn, session,callInfo)
-	}
-	return nil
 }
 
 func (m *BaseModule) OnTimeOut(fn string, Expired int64) {
