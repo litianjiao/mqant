@@ -40,20 +40,20 @@ func newWSConn(conn *websocket.Conn) *WSConn {
 	wsConn := new(WSConn)
 	wsConn.conn = conn
 	wsConn.buf_lock = make(chan error)
-	wsConn.readfirst=false
+	wsConn.readfirst = false
 	go func() {
 		for {
 			_, b, err := wsConn.conn.ReadMessage()
 			if err != nil {
 				//log.Error("读取数据失败 %s",err.Error())
 				wsConn.buf_lock <- err
+				break
 			} else {
 				wsConn.buffer.Write(b)
-				wsConn.readfirst=true
+				wsConn.readfirst = true
 				wsConn.buf_lock <- nil
 			}
 		}
-
 		conn.Close()
 		wsConn.Lock()
 		wsConn.closeFlag = true
@@ -89,8 +89,8 @@ func (wsConn *WSConn) Close() error {
 	return wsConn.conn.Close()
 }
 
-func (wsConn *WSConn) Write(p []byte) (n int, err error) {
-	err = wsConn.conn.WriteMessage(websocket.BinaryMessage, p)
+func (wsConn *WSConn) Write(p []byte) (int, error) {
+	err := wsConn.conn.WriteMessage(websocket.BinaryMessage, p)
 	if err != nil {
 		return 0, err
 	}
@@ -99,15 +99,15 @@ func (wsConn *WSConn) Write(p []byte) (n int, err error) {
 
 // goroutine not safe
 func (wsConn *WSConn) Read(p []byte) (n int, err error) {
-	err=<-wsConn.buf_lock //等待写入数据
-	if err!=nil{
+	err = <-wsConn.buf_lock //等待写入数据
+	if err != nil {
 		//读取数据出现异常了
 		return
 	}
-	if wsConn.buffer.Len()==0{
+	if wsConn.buffer.Len() == 0 {
 		//再等一次
-		err=<-wsConn.buf_lock //等待写入数据
-		if err!=nil{
+		err = <-wsConn.buf_lock //等待写入数据
+		if err != nil {
 			//读取数据出现异常了
 			return
 		}

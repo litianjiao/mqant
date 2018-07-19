@@ -14,35 +14,36 @@
 package defaultrpc
 
 import (
+	"github.com/gomodule/redigo/redis"
+	"github.com/golang/protobuf/proto"
 	"github.com/liangdas/mqant/conf"
 	"github.com/liangdas/mqant/log"
-	"github.com/liangdas/mqant/rpc/pb"
-	"github.com/golang/protobuf/proto"
 	"github.com/liangdas/mqant/rpc"
-	"runtime"
-	"github.com/garyburd/redigo/redis"
+	"github.com/liangdas/mqant/rpc/pb"
 	"github.com/liangdas/mqant/utils"
+	"runtime"
 )
 
 type RedisServer struct {
 	call_chan chan mqrpc.CallInfo
-	psc  redis.PubSubConn
-	info *conf.Redis
-	queueName	string
+	url       string
+	info      *conf.Redis
+	queueName string
 	done      chan error
+	pool      redis.Conn
+	closed    bool
 }
 
 func NewRedisServer(info *conf.Redis, call_chan chan mqrpc.CallInfo) (*RedisServer, error) {
 	var queueName = info.Queue
 	var url = info.Uri
-	psc := redis.PubSubConn{Conn: utils.GetRedisFactory().GetPool(url).Get()}
-	psc.Subscribe(queueName)
 	server := new(RedisServer)
 	server.call_chan = call_chan
-	server.psc = psc
-	server.info=info
-	server.queueName=queueName
+	server.url = url
+	server.info = info
+	server.queueName = queueName
 	server.done = make(chan error)
+	server.closed = false
 	go server.on_request_handle(server.done)
 
 	return server, nil
@@ -57,15 +58,22 @@ func NewRedisServer(info *conf.Redis, call_chan chan mqrpc.CallInfo) (*RedisServ
 停止接收请求
 */
 func (s *RedisServer) StopConsume() error {
-	return s.psc.Unsubscribe(s.queueName)
+	s.closed = true
+	if s.pool != nil {
+		return s.pool.Close()
+	}
+	return nil
 }
 
 /**
 注销消息队列
 */
 func (s *RedisServer) Shutdown() error {
-	s.psc.Unsubscribe(s.queueName)
-	return s.psc.Close()
+	s.closed = true
+	if s.pool != nil {
+		return s.pool.Close()
+	}
+	return nil
 }
 
 func (s *RedisServer) Callback(callinfo mqrpc.CallInfo) error {
@@ -77,10 +85,10 @@ func (s *RedisServer) Callback(callinfo mqrpc.CallInfo) error {
 消息应答
 */
 func (s *RedisServer) response(props map[string]interface{}, body []byte) error {
-	pool:=utils.GetRedisFactory().GetPool(s.info.Uri).Get()
+	pool := utils.GetRedisFactory().GetPool(s.info.Uri).Get()
 	defer pool.Close()
 	var err error
-	_, err = pool.Do("PUBLISH", props["reply_to"].(string), body)
+	_, err = pool.Do("lpush", props["reply_to"].(string), body)
 	if err != nil {
 		log.Warning("Publish: %s", err)
 		return err
@@ -105,16 +113,18 @@ func (s *RedisServer) on_request_handle(done chan error) {
 			buf := make([]byte, 1024)
 			l := runtime.Stack(buf, false)
 			errstr := string(buf[:l])
-			log.Error("%s\n ----Stack----\n%s",rn,errstr)
+			log.Error("%s\n ----Stack----\n%s", rn, errstr)
 		}
 	}()
-	for {
-		switch v := s.psc.Receive().(type) {
-		case redis.Message:
-			rpcInfo, err := s.Unmarshal(v.Data)
+	for !s.closed {
+		s.pool = utils.GetRedisFactory().GetPool(s.info.Uri).Get()
+		result, err := s.pool.Do("brpop", s.queueName, 0)
+		s.pool.Close()
+		if err == nil && result != nil {
+			rpcInfo, err := s.Unmarshal(result.([]interface{})[1].([]byte))
 			if err == nil {
-				callInfo:=&mqrpc.CallInfo{
-					RpcInfo:*rpcInfo,
+				callInfo := &mqrpc.CallInfo{
+					RpcInfo: *rpcInfo,
 				}
 				callInfo.Props = map[string]interface{}{
 					"reply_to": callInfo.RpcInfo.ReplyTo,
@@ -126,31 +136,9 @@ func (s *RedisServer) on_request_handle(done chan error) {
 			} else {
 				log.Error("error ", err)
 			}
-		case redis.PMessage:
-			rpcInfo, err := s.Unmarshal(v.Data)
-			if err == nil {
-				callInfo:=&mqrpc.CallInfo{
-					RpcInfo:*rpcInfo,
-				}
-				callInfo.Props = map[string]interface{}{
-					"reply_to": callInfo.RpcInfo.ReplyTo,
-				}
-
-				callInfo.Agent = s //设置代理为AMQPServer
-
-				s.call_chan <- *callInfo
-			} else {
-				log.Error("error ", err)
-			}
-		case redis.Subscription:
-			log.Info("%s: %s %d\n", v.Channel, v.Kind, v.Count)
-		case error:
-			log.Error("on_request_handle",v.Error())
-			return
-		default:
-
+		} else if err != nil {
+			log.Warning("error %s", err.Error())
 		}
-
 	}
 	log.Debug("finish on_request_handle")
 }
@@ -168,10 +156,10 @@ func (s *RedisServer) Unmarshal(data []byte) (*rpcpb.RPCInfo, error) {
 
 	panic("bug")
 }
+
 // goroutine safe
 func (s *RedisServer) MarshalResult(resultInfo rpcpb.ResultInfo) ([]byte, error) {
 	//log.Error("",map2)
 	b, err := proto.Marshal(&resultInfo)
 	return b, err
 }
-

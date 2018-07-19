@@ -6,7 +6,8 @@ package modules
 import (
 	"encoding/json"
 	"github.com/liangdas/mqant/conf"
-	"github.com/liangdas/mqant/log"
+	"github.com/liangdas/mqant/module"
+	"github.com/liangdas/mqant/module/base"
 	"github.com/liangdas/mqant/module/modules/master"
 	"io"
 	"io/ioutil"
@@ -15,8 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"github.com/liangdas/mqant/module"
-	"github.com/liangdas/mqant/module/base"
 )
 
 var MasterModule = func() module.Module {
@@ -67,7 +66,7 @@ type ModuleReport struct {
 	Id         string
 	Version    string
 	ProcessID  string
-	Executing  int64                         //当前正在执行的函数数量,暂态的,下一次上报时刷新
+	Executing  int64                                    //当前正在执行的函数数量,暂态的,下一次上报时刷新
 	ReportForm map[string]*basemodule.StatisticalMethod //运行状态报表
 }
 
@@ -79,6 +78,7 @@ type Master struct {
 	ModuleReports map[string]*ModuleReport //moduleID -- ModuleReport
 	rwmutex       sync.RWMutex
 }
+
 func (m *Master) GetType() string {
 	//很关键,需要与配置文件中的Module配置对应
 	return "Master"
@@ -119,26 +119,26 @@ func (m *Master) OnInit(app module.App, settings *conf.ModuleSettings) {
 }
 
 func (m *Master) Run(closeSig chan bool) {
-	if m.app.GetSettings().Master.WebHost != "" {
-		//app := golf.New()
-		//app.Static("/", m.app.GetSettings().Master.WebRoot)
-		//app.Run(m.app.GetSettings().Master.WebHost)
-		l, _ := net.Listen("tcp", m.app.GetSettings().Master.WebHost)
-		m.listener = l
-		go func() {
-			log.Info("Master web server Listen : %s", m.app.GetSettings().Master.WebHost)
-			http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(m.app.GetSettings().Master.WebRoot))))
-			http.HandleFunc("/api/process/list.json", m.ProcessList)
-			http.HandleFunc("/api/process/state/update.json", m.UpdateProcessState)
-			http.HandleFunc("/api/process/start.json", m.StartProcess)
-			http.HandleFunc("/api/process/stop.json", m.StopProcess)
-			http.HandleFunc("/api/module/list.json", m.ModuleList)
-			http.Serve(m.listener, nil)
-		}()
-		<-closeSig
-		log.Info("Master web server Shutting down...")
-		m.listener.Close()
-	}
+	//if m.app.GetSettings().Master.WebHost != "" {
+	//	//app := golf.New()
+	//	//app.Static("/", m.app.GetSettings().Master.WebRoot)
+	//	//app.Run(m.app.GetSettings().Master.WebHost)
+	//	l, _ := net.Listen("tcp", m.app.GetSettings().Master.WebHost)
+	//	m.listener = l
+	//	go func() {
+	//		log.Info("Master web server Listen : %s", m.app.GetSettings().Master.WebHost)
+	//		http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(m.app.GetSettings().Master.WebRoot))))
+	//		http.HandleFunc("/api/process/list.json", m.ProcessList)
+	//		http.HandleFunc("/api/process/state/update.json", m.UpdateProcessState)
+	//		http.HandleFunc("/api/process/start.json", m.StartProcess)
+	//		http.HandleFunc("/api/process/stop.json", m.StopProcess)
+	//		http.HandleFunc("/api/module/list.json", m.ModuleList)
+	//		http.Serve(m.listener, nil)
+	//	}()
+	//	<-closeSig
+	//	log.Info("Master web server Shutting down...")
+	//	m.listener.Close()
+	//}
 
 }
 

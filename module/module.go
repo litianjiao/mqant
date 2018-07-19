@@ -15,16 +15,28 @@ package module
 
 import (
 	"github.com/liangdas/mqant/conf"
+	"github.com/liangdas/mqant/gate"
 	"github.com/liangdas/mqant/rpc"
+	opentracing "github.com/opentracing/opentracing-go"
 )
+
+type ProtocolMarshal interface {
+	GetData() []byte
+}
+
 type ServerSession interface {
-	GetId()string
-	GetType()string
-	GetRpc()mqrpc.RPCClient
+	GetId() string
+	GetType() string
+	GetRpc() mqrpc.RPCClient
 	Call(_func string, params ...interface{}) (interface{}, string)
 	CallNR(_func string, params ...interface{}) (err error)
-	CallArgs(_func string, ArgsType []string,args [][]byte) (interface{}, string)
-	CallNRArgs(_func string, ArgsType []string,args [][]byte) (err error)
+	CallArgs(_func string, ArgsType []string, args [][]byte) (interface{}, string)
+	CallNRArgs(_func string, ArgsType []string, args [][]byte) (err error)
+
+	//不可靠的RPC传输,底层基于udp协议
+	CallArgsUnreliable(_func string, ArgsType []string, args [][]byte) (interface{}, string)
+	//不可靠的RPC传输,底层基于udp协议
+	CallUnreliable(_func string, params ...interface{}) (interface{}, string)
 }
 type App interface {
 	Run(debug bool, mods ...Module) error
@@ -33,16 +45,17 @@ type App interface {
 	fn: func(moduleType string,serverId string,[]*ServerSession)(*ServerSession)
 	*/
 	Route(moduleType string, fn func(app App, Type string, hash string) ServerSession) error
+	SetMapRoute(fn func(app App, route string) string) error
 	Configure(settings conf.Config) error
 	OnInit(settings conf.Config) error
 	OnDestroy() error
 	RegisterLocalClient(serverId string, server mqrpc.RPCServer) error
-	GetServersById(id string) (ServerSession, error)
+	GetServerById(id string) (ServerSession, error)
 	/**
 	filter		 调用者服务类型    moduleType|moduleType@moduleID
 	Type	   	想要调用的服务类型
 	*/
-	GetRouteServers(filter string, hash string) (ServerSession, error) //获取经过筛选过的服务
+	GetRouteServer(filter string, hash string) (ServerSession, error) //获取经过筛选过的服务
 	GetServersByType(Type string) []ServerSession
 	GetSettings() conf.Config //获取配置信息
 	RpcInvoke(module RPCModule, moduleType string, _func string, params ...interface{}) (interface{}, string)
@@ -51,19 +64,42 @@ type App interface {
 	/**
 	添加一个 自定义参数序列化接口
 	gate,system 关键词一被占用请使用其他名称
-	 */
+	*/
 	AddRPCSerialize(name string, Interface RPCSerialize) error
 
-	GetRPCSerialize()(map[string]RPCSerialize)
+	GetRPCSerialize() map[string]RPCSerialize
+
+	DefaultTracer(func() opentracing.Tracer) error
+
+	GetTracer() opentracing.Tracer
+
+	GetModuleInited() func(app App, module Module)
+
+	GetJudgeGuest() func(session gate.Session) bool
+
+	OnConfigurationLoaded(func(app App)) error
+	OnModuleInited(func(app App, module Module)) error
+	OnStartup(func(app App)) error
+
+	SetJudgeGuest(judgeGuest func(session gate.Session) bool) error
+
+	SetProtocolMarshal(protocolMarshal func(Result interface{}, Error string) (ProtocolMarshal, string)) error
+	/**
+	与客户端通信的协议包接口
+	*/
+	ProtocolMarshal(Result interface{}, Error string) (ProtocolMarshal, string)
+	NewProtocolMarshal(data []byte) ProtocolMarshal
+	GetProcessID() string
 }
 
 type Module interface {
-	Version() string //模块版本
-	GetType() string //模块类型
-	OnConfChanged(settings *conf.ModuleSettings)	//为以后动态服务发现做准备
+	Version() string                             //模块版本
+	GetType() string                             //模块类型
+	OnAppConfigurationLoaded(app App)            //当App初始化时调用，这个接口不管这个模块是否在这个进程运行都会调用
+	OnConfChanged(settings *conf.ModuleSettings) //为以后动态服务发现做准备
 	OnInit(app App, settings *conf.ModuleSettings)
 	OnDestroy()
-	GetApp()(App)
+	GetApp() App
 	Run(closeSig chan bool)
 }
 type RPCModule interface {
@@ -71,21 +107,23 @@ type RPCModule interface {
 	GetServerId() string //模块类型
 	RpcInvoke(moduleType string, _func string, params ...interface{}) (interface{}, string)
 	RpcInvokeNR(moduleType string, _func string, params ...interface{}) error
-	RpcInvokeArgs(moduleType string, _func string, ArgsType []string,args [][]byte) (interface{}, string)
-	RpcInvokeNRArgs(moduleType string, _func string, ArgsType []string,args [][]byte) error
+	RpcInvokeArgs(moduleType string, _func string, ArgsType []string, args [][]byte) (interface{}, string)
+	RpcInvokeNRArgs(moduleType string, _func string, ArgsType []string, args [][]byte) error
+	RpcInvokeUnreliable(moduleType string, _func string, params ...interface{}) (interface{}, string)
+	RpcInvokeArgsUnreliable(moduleType string, _func string, ArgsType []string, args [][]byte) (interface{}, string)
 	GetModuleSettings() (settings *conf.ModuleSettings)
 	/**
 	filter		 调用者服务类型    moduleType|moduleType@moduleID
 	Type	   	想要调用的服务类型
 	*/
-	GetRouteServers(filter string, hash string) (ServerSession, error)
+	GetRouteServer(filter string, hash string) (ServerSession, error)
 	GetStatistical() (statistical string, err error)
 	GetExecuting() int64
 }
 
 /**
 rpc 自定义参数序列化接口
- */
+*/
 type RPCSerialize interface {
 	/**
 	序列化 结构体-->[]byte
@@ -93,18 +131,18 @@ type RPCSerialize interface {
 	@return ptype 当能够序列化这个值,并且正确解析为[]byte时 返回改值正确的类型,否则返回 ""即可
 	@return p 解析成功得到的数据, 如果无法解析该类型,或者解析失败 返回nil即可
 	@return err 无法解析该类型,或者解析失败 返回错误信息
-	 */
-	Serialize(param interface{})(ptype string,p []byte, err error)
+	*/
+	Serialize(param interface{}) (ptype string, p []byte, err error)
 	/**
 	反序列化 []byte-->结构体
 	ptype 参数类型 与Serialize函数中ptype 对应
 	b   参数的字节流
 	@return param 解析成功得到的数据结构
 	@return err 无法解析该类型,或者解析失败 返回错误信息
-	 */
-	Deserialize(ptype string,b []byte)(param interface{},err error)
+	*/
+	Deserialize(ptype string, b []byte) (param interface{}, err error)
 	/**
 	返回这个接口能够处理的所有类型
-	 */
-	GetTypes()([]string)
+	*/
+	GetTypes() []string
 }

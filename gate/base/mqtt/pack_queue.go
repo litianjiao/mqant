@@ -17,10 +17,12 @@ package mqtt
 import (
 	"bufio"
 	"fmt"
+	"time"
+	"runtime"
 	"github.com/liangdas/mqant/conf"
 	"github.com/liangdas/mqant/log"
 	"github.com/liangdas/mqant/network"
-	"time"
+	"github.com/juju/errors"
 )
 
 // Tcp write queue
@@ -31,7 +33,7 @@ type PackQueue struct {
 	// Notice read the error
 	errorChan chan error
 	noticeFin chan byte
-	writeChan chan *pakcAdnType
+	writeChan chan *packAndType
 	readChan  chan<- *packAndErr
 	// Pack connection
 	r *bufio.Reader
@@ -54,7 +56,7 @@ const (
 	FLUSH
 )
 
-type pakcAdnType struct {
+type packAndType struct {
 	pack *Pack
 	typ  byte
 }
@@ -72,7 +74,7 @@ func NewPackQueue(conf conf.Mqtt, r *bufio.Reader, w *bufio.Writer, conn network
 		w:         w,
 		conn:      conn,
 		noticeFin: make(chan byte, 2),
-		writeChan: make(chan *pakcAdnType, conf.WirteLoopChanNum),
+		writeChan: make(chan *packAndType, conf.WirteLoopChanNum),
 		readChan:  readChan,
 		errorChan: make(chan error, 1),
 	}
@@ -81,7 +83,18 @@ func NewPackQueue(conf conf.Mqtt, r *bufio.Reader, w *bufio.Writer, conn network
 // Start a pack write queue
 // It should run in a new grountine
 func (queue *PackQueue) writeLoop() {
-	// defer recover()
+	defer func() {
+		if r := recover(); r != nil {
+			buf := make([]byte, 1024)
+			l := runtime.Stack(buf, false)
+			errstr := string(buf[:l])
+			queue.writeError = errors.New(errstr)
+			queue.errorChan <- errors.New(errstr)
+			queue.noticeFin <- 0
+		}
+
+
+	}()
 	var err error
 loop:
 	for {
@@ -122,7 +135,7 @@ func (queue *PackQueue) WritePack(pack *Pack) error {
 	if queue.writeError != nil {
 		return queue.writeError
 	}
-	queue.writeChan <- &pakcAdnType{pack: pack}
+	queue.writeChan <- &packAndType{pack: pack}
 	return nil
 }
 
@@ -130,7 +143,7 @@ func (queue *PackQueue) WriteDelayPack(pack *Pack) error {
 	if queue.writeError != nil {
 		return queue.writeError
 	}
-	queue.writeChan <- &pakcAdnType{
+	queue.writeChan <- &packAndType{
 		pack: pack,
 		typ:  DELAY,
 	}
@@ -150,7 +163,7 @@ func (queue *PackQueue) Flush() error {
 	if queue.writeError != nil {
 		return queue.writeError
 	}
-	queue.writeChan <- &pakcAdnType{typ: FLUSH}
+	queue.writeChan <- &packAndType{typ: FLUSH}
 	return nil
 }
 
@@ -187,7 +200,9 @@ func (queue *PackQueue) ReadPackInLoop() {
 	loop:
 		for {
 			if queue.alive > 0 {
-				queue.conn.SetReadDeadline(time.Now().Add(time.Second * time.Duration(queue.alive)))
+				queue.conn.SetReadDeadline(time.Now().Add(time.Second * time.Duration(int(float64(queue.alive)*1.5))))
+			} else {
+				queue.conn.SetReadDeadline(time.Now().Add(time.Second * 90))
 			}
 			if is_continue {
 				p.pack, p.err = ReadPack(queue.r)

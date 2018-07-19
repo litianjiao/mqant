@@ -16,14 +16,15 @@ package basemodule
 import (
 	"fmt"
 	"github.com/liangdas/mqant/conf"
-	"github.com/liangdas/mqant/module/modules/timer"
 	"github.com/liangdas/mqant/log"
 	"github.com/liangdas/mqant/module"
 )
+
 func NewModuleManager() (m *ModuleManager) {
 	m = new(ModuleManager)
 	return
 }
+
 type ModuleManager struct {
 	app     module.App
 	mods    []*DefaultModule
@@ -68,10 +69,15 @@ func (mer *ModuleManager) Init(app module.App, ProcessID string) {
 	for i := 0; i < len(mer.runMods); i++ {
 		m := mer.runMods[i]
 		m.mi.OnInit(app, m.settings)
+
+		if app.GetModuleInited() != nil {
+			app.GetModuleInited()(app, m.mi)
+		}
+
 		m.wg.Add(1)
 		go run(m)
 	}
-	timer.SetTimer(3, mer.ReportStatistics, nil) //统计汇报定时任务
+	//timer.SetTimer(3, mer.ReportStatistics, nil) //统计汇报定时任务
 }
 
 /**
@@ -126,7 +132,6 @@ func (mer *ModuleManager) ReportStatistics(args interface{}) {
 			default:
 			}
 		}
-		timer.SetTimer(3, mer.ReportStatistics, nil)
+		//timer.SetTimer(3, mer.ReportStatistics, nil)
 	}
 }
-
